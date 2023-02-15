@@ -53,17 +53,38 @@ axiosInstance.interceptors.request.use((request: AxiosRequestConfig) => {
 
 function App() {
   const authProvider: AuthProvider = {
-    login: ({ credential }: CredentialResponse) => {
+    login: async ({ credential }: CredentialResponse) => {
       const profileObj = credential ? parseJwt(credential) : null;
 
       if (profileObj) {
-        localStorage.setItem(
-          'user',
-          JSON.stringify({
-            ...profileObj,
-            avatar: profileObj.picture,
-          })
+        const response = await fetch(
+          `http://localhost:${process.env.REACT_APP_SERVER_PORT}/api/v1/users`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: profileObj.name,
+              email: profileObj.email,
+              avatar: profileObj.picture,
+            }),
+          }
         );
+        const data = await response.json();
+        if (response.status === 200) {
+          localStorage.setItem(
+            'user',
+            JSON.stringify({
+              ...profileObj,
+              avatar: profileObj.picture,
+              userId: data._id,
+            })
+          );
+        } else {
+          console.log(profileObj);
+          return Promise.reject(data.message);
+        }
       }
 
       localStorage.setItem('token', `${credential}`);
@@ -109,7 +130,10 @@ function App() {
       <GlobalStyles styles={{ html: { WebkitFontSmoothing: 'auto' } }} />
       <RefineSnackbarProvider>
         <Refine
-          dataProvider={dataProvider('https://api.fake-rest.refine.dev')}
+          dataProvider={dataProvider(
+            `http://localhost:${process.env.REACT_APP_SERVER_PORT}/api/v1`,
+            axiosInstance
+          )}
           notificationProvider={notificationProvider}
           ReadyPage={ReadyPage}
           catchAll={<ErrorComponent />}

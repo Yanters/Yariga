@@ -4,7 +4,7 @@ import {
   getAllUsers,
   createUser,
   getUserInfoById,
-} from '../controllers/user.controller';
+} from '../controllers/user.controller.js';
 
 const router = experss.Router();
 
