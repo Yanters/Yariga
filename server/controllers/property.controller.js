@@ -46,7 +46,15 @@ const getAllProperties = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-const getPropertyDetail = async (req, res) => {};
+const getPropertyDetail = async (req, res) => {
+  const { id } = req.params;
+  const propertyExists = await Property.findById(id).populate('creator');
+
+  if (!propertyExists)
+    return res.status(404).json({ message: 'Property not found' });
+
+  res.status(200).json(propertyExists);
+};
 
 const createProperty = async (req, res) => {
   try {
@@ -85,8 +93,52 @@ const createProperty = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-const updateProperty = async (req, res) => {};
-const deleteProperty = async (req, res) => {};
+const updateProperty = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, propertyType, location, price, photo } =
+      req.body;
+
+    const photoUrl = await cloudinary.uploader.upload(photo);
+
+    await Property.findByIdAndUpdate(id, {
+      title,
+      description,
+      propertyType,
+      location,
+      price,
+      photo: photoUrl.url || photo,
+    });
+
+    res.status(200).json({ message: 'Property updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteProperty = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const propertyToDelete = await Property.findById(id).populate('creator');
+
+    if (!propertyToDelete)
+      return res.status(404).json({ message: 'Property not found' });
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    propertyToDelete.remove({ session });
+    propertyToDelete.creator.allProperties.pull(propertyToDelete);
+
+    await propertyToDelete.creator.save({ session });
+    await session.commitTransaction();
+
+    res.status(200).json({ message: 'Property deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export {
   getAllProperties,
