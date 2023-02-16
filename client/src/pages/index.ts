@@ -1,5 +1,5 @@
 import AgentProfile from './Agent-profile';
-import Agents from './Agent';
+import Agents from './Agents';
 import AllProperties from './All-properties';
 import CreateProperty from './Create-property';
 import Home from './Home';
